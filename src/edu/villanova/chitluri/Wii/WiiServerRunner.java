@@ -790,7 +790,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
 				Y = (int) Math.round(light.getY() * 900);
 				int tempX = X;
 				int tempY = Y;
-				if(!(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2)){
+				if(!(Math.abs(lastX-X) < 5 && Math.abs(lastY - Y) < 5)){
 					if(countHighsAndLows() == 0){
 						System.out.println("Move");
 					}
@@ -803,10 +803,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
 						//tempY = minHeapY.peek();
 					}
 					robot.mouseMove(tempX, tempY);
+					lastTime = curTime;
+					lastX = tempX;
+					lastY = tempY;
 				}
-				lastTime = curTime;
-				lastX = X;
-				lastY = Y;
+				
 			  }
 		  }
 		  addXtoHeap(X);
@@ -1097,7 +1098,9 @@ public class WiiServerRunner extends WiiRemoteAdapter
     
       remote.getButtonMaps().add(new ButtonMap(WRButtonEvent.HOME, ButtonMap.NUNCHUK, WRNunchukExtensionEvent.C, new int[]{java.awt.event.KeyEvent.VK_CONTROL}, 
         java.awt.event.InputEvent.BUTTON1_MASK, 0, -1));
-            
+          
+      remote.getButtonMaps().add(new ButtonMouseMap(WRButtonEvent.B, java.awt.event.InputEvent.BUTTON1_MASK));
+      remote.getButtonMaps().add(new ButtonMouseMap(WRButtonEvent.A, java.awt.event.InputEvent.BUTTON3_MASK));
       /* 
       // Prebuffer a preformatted audio file
       
