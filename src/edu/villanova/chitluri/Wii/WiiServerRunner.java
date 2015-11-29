@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.PriorityQueue;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -138,6 +139,10 @@ public class WiiServerRunner extends WiiRemoteAdapter
   
   private static ArrayList<Integer> XValues = new ArrayList<Integer>();
   private static ArrayList<Integer> YValues = new ArrayList<Integer>();
+  private static PriorityQueue<Integer> minHeapX = new PriorityQueue<Integer>(50);
+  private static PriorityQueue<Integer> maxHeapX = new PriorityQueue<Integer>(50, Collections.reverseOrder());
+  private static PriorityQueue<Integer> minHeapY = new PriorityQueue<Integer>(50);
+  private static PriorityQueue<Integer> maxHeapY = new PriorityQueue<Integer>(50, Collections.reverseOrder());
   
   
   /***************************
@@ -794,6 +799,8 @@ public class WiiServerRunner extends WiiRemoteAdapter
 						int values[] = findMedianXY(XValues, YValues);
 						tempX = values[0];
 						tempY = values[1];
+						//tempX = minHeapX.peek();
+						//tempY = minHeapY.peek();
 					}
 					robot.mouseMove(tempX, tempY);
 				}
@@ -802,6 +809,8 @@ public class WiiServerRunner extends WiiRemoteAdapter
 				lastY = Y;
 			  }
 		  }
+		  addXtoHeap(X);
+		  addYtoHeap(Y);
 		  addXtoList(X);
 		  addYtoList(Y);
 	} catch (AWTException e) {
@@ -815,6 +824,17 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  if(XValues.size() == 100){
 		  XValues.remove(0);
 		  XValues.add(99, X);
+		  if(maxHeapX.size() == 0 && XValues.get(0) > 0){
+			  buildMaxMinHeapsX();
+			  /*for(int i=0; i < 50; i++){
+				  System.out.print("  "+minHeapX.poll());
+			  }
+			  System.out.println("------X------");
+			  for(int i=0; i < 50; i++){
+				  System.out.print("  "+maxHeapX.poll());
+			  }
+			  System.out.println();*/
+		  }
 	  }
 	  else{
 		  XValues.add(X);
@@ -825,9 +845,120 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  if(YValues.size() == 100){
 		  YValues.remove(0);
 		  YValues.add(99, Y);
+		  if(maxHeapY.size() == 0 && YValues.get(0) > 0){
+			  buildMaxMinHeapsY();
+			  /*for(int i=0; i < 50; i++){
+				  System.out.print("  "+minHeapY.poll());
+			  }
+			  System.out.println("------Y------");
+			  for(int i=0; i < 50; i++){
+				  System.out.print("  "+maxHeapY.poll());
+			  }
+			  System.out.println();*/
+		  }
 	  }
 	  else{
 		  YValues.add(Y);
+	  }
+  }
+  
+  public void addXtoHeap(int X){
+	  if(minHeapX.size() == 50 && maxHeapX.size() == 50){
+		  int elemToRemove = XValues.get(0);
+		  if(maxHeapX.contains(elemToRemove)){
+			  maxHeapX.remove(elemToRemove);
+		  }
+		  else if(minHeapX.contains(elemToRemove)){
+			  minHeapX.remove(elemToRemove);
+		  }
+		  else{
+			  System.out.println("Fatal Error: Cannot remove element from X Heap");
+		  }
+		  
+		  if(X < maxHeapX.peek()){
+			  if(maxHeapX.size() == 49){
+				  maxHeapX.add(X);
+			  }
+			  else if(minHeapX.size() == 49){
+				  minHeapX.add(maxHeapX.poll());
+				  maxHeapX.add(X);
+			  }
+		  }
+		  else{
+			  if(minHeapX.size() == 49){
+				  minHeapX.add(X);
+			  }
+			  else if(maxHeapX.size() == 49){
+				  maxHeapX.add(minHeapX.poll());
+				  minHeapX.add(X);
+			  }
+		  }
+	  }
+  }
+  
+  public void addYtoHeap(int Y){
+	  if(minHeapY.size() == 50 && maxHeapY.size() == 50){
+		  int elemToRemove = YValues.get(0);
+		  if(maxHeapY.contains(elemToRemove)){
+			  maxHeapY.remove(elemToRemove);
+		  }
+		  else if(minHeapY.contains(elemToRemove)){
+			  minHeapY.remove(elemToRemove);
+		  }
+		  else{
+			  System.out.println("Fatal Error: Cannot remove element from Y Heap");
+		  }
+		  
+		  if(Y < maxHeapY.peek()){
+			  if(maxHeapY.size() == 49){
+				  maxHeapY.add(Y);
+			  }
+			  else if(minHeapY.size() == 49){
+				  minHeapY.add(maxHeapY.poll());
+				  maxHeapY.add(Y);
+			  }
+		  }
+		  else{
+			  if(minHeapY.size() == 49){
+				  minHeapY.add(Y);
+			  }
+			  else if(maxHeapY.size() == 49){
+				  maxHeapY.add(minHeapY.poll());
+				  minHeapY.add(Y);
+			  }
+		  }
+	  }
+  }
+  
+  public void buildMaxMinHeapsX(){
+	  for(int i=0; i<50; i++){
+		  maxHeapX.add(XValues.get(i));
+	  }
+	  for(int i=50; i<100; i++){
+		  if(XValues.get(i) < maxHeapX.peek()){
+			  int temp = maxHeapX.poll();
+			  maxHeapX.add(XValues.get(i));
+			  minHeapX.add(temp);
+		  }
+		  else{
+			  minHeapX.add(XValues.get(i));
+		  }
+	  }
+  }
+  
+  public void buildMaxMinHeapsY(){
+	  for(int i=0; i<50; i++){
+		  maxHeapY.add(YValues.get(i));
+	  }
+	  for(int i=50; i<100; i++){
+		  if(YValues.get(i) < maxHeapY.peek()){
+			  int temp = maxHeapY.poll();
+			  maxHeapY.add(YValues.get(i));
+			  minHeapY.add(temp);
+		  }
+		  else{
+			  minHeapY.add(YValues.get(i));
+		  }
 	  }
   }
   
