@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
 import java.awt.*;
+
 import javax.swing.*;
+
 import wiiremotej.*;
 import wiiremotej.event.*;
+
 import java.util.Observable;
 
 import javax.sound.sampled.*;
@@ -67,6 +70,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
   public static IntermediaryObservervable observable; // Used to communicate to WiiServerThreads
   private static String messageToBeObserved = ""; // Message observed by WiiServerThreads
   private static int count = 0;
+  private static int IRcounter = 0;
   
   private static int xxyyzz = 0;
   private static int lastXXYYZZ = 0;
@@ -94,6 +98,8 @@ public class WiiServerRunner extends WiiRemoteAdapter
   private static int lastX = 0;
   private static int lastY = 0;
   private static int lastZ = 0;
+  
+  private static long lastTime = 0;
   
   private static PrebufferedSound prebuf;
   
@@ -225,6 +231,24 @@ public class WiiServerRunner extends WiiRemoteAdapter
       double raw_x = evt.getXAcceleration();
       double raw_y = evt.getYAcceleration();
       double raw_z = evt.getZAcceleration();
+      
+      System.out.println("Raw X, Y, Z: "+raw_x+", "+raw_y+", "+raw_z);
+      
+      try {
+		  Robot robot = new Robot();
+		  int X = 0;
+		  int Y = 0;
+		  X = (int) Math.round((( raw_x + 1 ) / 2.0) *
+                  1400 );
+		  Y = (int) Math.round((( 1 - raw_y ) / 2.0) *
+                  900 );
+		  robot.mouseMove(X,Y);
+		  
+		  
+	  }catch (AWTException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	  }
       
       // Concatenate the accelerometer values into the messageToBeObserved
       messageToBeObserved += "wx=" + Double.toString(raw_x) + ", " + //wx stands for WiiMote X Acceleration
@@ -714,14 +738,67 @@ public class WiiServerRunner extends WiiRemoteAdapter
   
   public void IRInputReceived(WRIREvent evt)
   {
-    /*for (IRLight light : evt.getIRLights())
-    {
-      if (light != null)
-      {
-        System.out.println("X: "+light.getX());
-        System.out.println("Y: "+light.getY());
-      }
-    }*/
+	  long currTime = System.currentTimeMillis();
+	  IRcounter++;
+	  if((currTime - lastTime) >= 1000/32){
+		  System.out.println("No of IR inputs recieved per second: "+IRcounter);
+		  IRcounter = 0;
+		  lastTime = currTime;
+		  try {
+			  Robot robot = new Robot();
+			  long curTime = System.currentTimeMillis();
+			  int X = 0;
+			  int Y = 0;
+			  if((curTime - lastTime) < 100){
+				  //return;
+			  }
+			  for (IRLight light : evt.getIRLights())
+			  {
+				  if (light != null) {
+					X = (int) Math.round((1.0D - light.getX()) * 1440);
+					Y = (int) Math.round(light.getY() * 900);
+					if(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2){
+						continue;
+					}
+					robot.mouseMove(X, Y);
+					lastTime = curTime;
+				  }
+				  lastX = X;
+				  lastY = Y;
+			  }
+		  }catch (AWTException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		  }
+	  }
+	  
+	  /*//System.out.println("Called");
+	  try {
+		  Robot robot = new Robot();
+		  long curTime = System.currentTimeMillis();
+		  int X = 0;
+		  int Y = 0;
+		  if((curTime - lastTime) < 100){
+			  return;
+		  }
+		  for (IRLight light : evt.getIRLights())
+		  {
+			  if (light != null) {
+				X = (int) Math.round((1.0D - light.getX()) * 1440);
+				Y = (int) Math.round(light.getY() * 900);
+				if(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2){
+					continue;
+				}
+				robot.mouseMove(X, Y);
+				lastTime = curTime;
+			  }
+			  lastX = X;
+			  lastY = Y;
+		  }
+	  }catch (AWTException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	  }*/
     
   }
   
@@ -843,10 +920,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
       
       //WiiRemote remote = WiiRemoteJ.connectToRemote("001F32FD09B0");
       remote.addWiiRemoteListener(new WiiServerRunner(remote));
-      remote.setAccelerometerEnabled(true);
+      //remote.setAccelerometerEnabled(true);
       //remote.setSpeakerEnabled(true);
       remote.setIRSensorEnabled(true, WRIREvent.BASIC);
       remote.setLEDIlluminated(0, true);
+      remote.enableContinuous();
     
       remote.getButtonMaps().add(new ButtonMap(WRButtonEvent.HOME, ButtonMap.NUNCHUK, WRNunchukExtensionEvent.C, new int[]{java.awt.event.KeyEvent.VK_CONTROL}, 
         java.awt.event.InputEvent.BUTTON1_MASK, 0, -1));
