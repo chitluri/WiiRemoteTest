@@ -1,6 +1,7 @@
 package edu.villanova.chitluri.Wii;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Observable;
 import java.util.Observer;
 import java.awt.*;
@@ -94,6 +95,8 @@ public class WiiServerRunner extends WiiRemoteAdapter
   private static int x = 0;
   private static int y = 0;
   private static int z = 0;
+  private static int XArray[] = new int[120];
+  private static int YArray[] = new int[120];
   
   private static int lastX = 0;
   private static int lastY = 0;
@@ -738,39 +741,36 @@ public class WiiServerRunner extends WiiRemoteAdapter
   
   public void IRInputReceived(WRIREvent evt)
   {
-	  long currTime = System.currentTimeMillis();
-	  IRcounter++;
-	  if((currTime - lastTime) >= 1000/32){
-		  System.out.println("No of IR inputs recieved per second: "+IRcounter);
-		  IRcounter = 0;
-		  lastTime = currTime;
-		  try {
-			  Robot robot = new Robot();
-			  long curTime = System.currentTimeMillis();
-			  int X = 0;
-			  int Y = 0;
-			  if((curTime - lastTime) < 100){
-				  //return;
+	  try {
+		  Robot robot = new Robot();
+		  long curTime = System.currentTimeMillis();
+		  for (IRLight light : evt.getIRLights()) {
+			  if (light != null){
+				XArray[IRcounter] = (int) Math.round((1.0D - light.getX()) * 1440);
+				YArray[IRcounter] = (int) Math.round(light.getY() * 900);
+				if(!(Math.abs(lastX-XArray[IRcounter]) < 2 && Math.abs(lastY - YArray[IRcounter]) < 2)){
+					robot.mouseMove(XArray[IRcounter], YArray[IRcounter]);
+				}
+				lastTime = curTime;
+				lastX = XArray[IRcounter];
+				lastY = YArray[IRcounter];
 			  }
-			  for (IRLight light : evt.getIRLights())
-			  {
-				  if (light != null) {
-					X = (int) Math.round((1.0D - light.getX()) * 1440);
-					Y = (int) Math.round(light.getY() * 900);
-					if(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2){
-						continue;
-					}
-					robot.mouseMove(X, Y);
-					lastTime = curTime;
-				  }
-				  lastX = X;
-				  lastY = Y;
-			  }
-		  }catch (AWTException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		  }
-	  }
+		  IRcounter++;
+		  
+		  if(IRcounter >= 100){
+			  countHighsAndLows();
+			  //System.out.println("No of IR inputs recieved per second: "+IRcounter);
+			  //System.out.println(Arrays.toString(XArray));
+			  //System.out.println(Arrays.toString(YArray));
+			  IRcounter = 0;
+			  lastTime = curTime;
+		
+		  }
+	} catch (AWTException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	  
 	  /*//System.out.println("Called");
 	  try {
@@ -944,5 +944,57 @@ public class WiiServerRunner extends WiiRemoteAdapter
       Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){public void run(){remoteF.disconnect();}}));
     }
     catch(Exception e){e.printStackTrace();}
+  }
+  
+  public void countHighsAndLows(){
+	  long valuesSum = 0l;
+	  int highs = 0;
+	  int lows = 0;
+	  int height = 0;
+	  int depth = 0;
+	  boolean isIncreasing = false;
+	  boolean isDecreasing = false;
+	  
+	  if(XArray[0] < XArray[1]){
+		  isIncreasing = true;
+		  height += 2;
+	  }
+	  else{
+		  isDecreasing = true;
+		  depth += 2;
+	  }
+	  
+	  for(int i=2; i < 100; i++){
+		  valuesSum += XArray[i];
+		  if(XArray[i] == 0){
+			  break;
+		  }
+		  if(isIncreasing){
+			  if(XArray[i-1] > XArray[i]){
+				  if(height >= 5){
+					  highs++;
+				  }
+				  height = 0;
+				  isIncreasing = false;
+				  isDecreasing = true;
+				  depth = 2;
+			  }
+			  height++;
+		  }
+		  else if(isDecreasing){
+			  if(XArray[i-1] <= XArray[i]){
+				  if(depth >= 5){
+					  lows++;
+				  }
+				  depth = 0;
+				  isIncreasing = true;
+				  isDecreasing = false;
+				  height = 2;
+			  }
+			  depth++;
+		  }
+	  }
+	  System.out.println("Highs: "+highs+" Lows: "+lows);
+	  System.out.println("Sum of all values: "+valuesSum);
   }
 }
