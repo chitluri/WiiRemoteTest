@@ -1,23 +1,53 @@
 package edu.villanova.chitluri.Wii;
 
+import java.awt.AWTException;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Robot;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Observable;
 import java.util.Observer;
-import java.awt.*;
 
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
-import wiiremotej.*;
-import wiiremotej.event.*;
-
-import java.util.Observable;
-
-import javax.sound.sampled.*;
+import wiiremotej.AbsoluteAnalogStickMouse;
+import wiiremotej.AccelerometerMouse;
+import wiiremotej.AnalogStickData;
+import wiiremotej.AnalogStickMouse;
+import wiiremotej.ButtonMap;
+import wiiremotej.ButtonMouseMap;
+import wiiremotej.ButtonMouseWheelMap;
+import wiiremotej.IRAccelerometerMouse;
+import wiiremotej.IRLight;
+import wiiremotej.IRMouse;
+import wiiremotej.MotionAccelerometerMouse;
+import wiiremotej.PrebufferedSound;
+import wiiremotej.RelativeAnalogStickMouse;
+import wiiremotej.TiltAccelerometerMouse;
+import wiiremotej.WiiRemote;
+import wiiremotej.WiiRemoteExtension;
+import wiiremotej.WiiRemoteJ;
+import wiiremotej.event.WRAccelerationEvent;
+import wiiremotej.event.WRButtonEvent;
+import wiiremotej.event.WRClassicControllerExtensionEvent;
+import wiiremotej.event.WRExtensionEvent;
+import wiiremotej.event.WRGuitarExtensionEvent;
+import wiiremotej.event.WRIREvent;
+import wiiremotej.event.WRNunchukExtensionEvent;
+import wiiremotej.event.WRStatusEvent;
+import wiiremotej.event.WiiRemoteAdapter;
 
 import com.intel.bluetooth.BlueCoveConfigProperties;
-
-import java.io.*;
 
 //********************************************************
 //NOTE
@@ -105,6 +135,9 @@ public class WiiServerRunner extends WiiRemoteAdapter
   private static long lastTime = 0;
   
   private static PrebufferedSound prebuf;
+  
+  private static ArrayList<Integer> XValues = new ArrayList<Integer>();
+  private static ArrayList<Integer> YValues = new ArrayList<Integer>();
   
   
   /***************************
@@ -743,65 +776,70 @@ public class WiiServerRunner extends WiiRemoteAdapter
   {
 	  try {
 		  Robot robot = new Robot();
+		  int X = 0;
+		  int Y = 0;
 		  long curTime = System.currentTimeMillis();
 		  for (IRLight light : evt.getIRLights()) {
 			  if (light != null){
-				XArray[IRcounter] = (int) Math.round((1.0D - light.getX()) * 1440);
-				YArray[IRcounter] = (int) Math.round(light.getY() * 900);
-				if(!(Math.abs(lastX-XArray[IRcounter]) < 2 && Math.abs(lastY - YArray[IRcounter]) < 2)){
-					robot.mouseMove(XArray[IRcounter], YArray[IRcounter]);
+				X = (int) Math.round((1.0D - light.getX()) * 1440);
+				Y = (int) Math.round(light.getY() * 900);
+				int tempX = X;
+				int tempY = Y;
+				if(!(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2)){
+					if(countHighsAndLows() == 0){
+						System.out.println("Move");
+					}
+					else{
+						System.out.println("Don't Move");
+						int values[] = findMedianXY(XValues, YValues);
+						tempX = values[0];
+						tempY = values[1];
+					}
+					robot.mouseMove(tempX, tempY);
 				}
 				lastTime = curTime;
-				lastX = XArray[IRcounter];
-				lastY = YArray[IRcounter];
+				lastX = X;
+				lastY = Y;
 			  }
 		  }
-		  IRcounter++;
-		  
-		  if(IRcounter >= 100){
-			  countHighsAndLows();
-			  //System.out.println("No of IR inputs recieved per second: "+IRcounter);
-			  //System.out.println(Arrays.toString(XArray));
-			  //System.out.println(Arrays.toString(YArray));
-			  IRcounter = 0;
-			  lastTime = curTime;
-		
-		  }
+		  addXtoList(X);
+		  addYtoList(Y);
 	} catch (AWTException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
-	  
-	  /*//System.out.println("Called");
-	  try {
-		  Robot robot = new Robot();
-		  long curTime = System.currentTimeMillis();
-		  int X = 0;
-		  int Y = 0;
-		  if((curTime - lastTime) < 100){
-			  return;
-		  }
-		  for (IRLight light : evt.getIRLights())
-		  {
-			  if (light != null) {
-				X = (int) Math.round((1.0D - light.getX()) * 1440);
-				Y = (int) Math.round(light.getY() * 900);
-				if(Math.abs(lastX-X) < 2 && Math.abs(lastY - Y) < 2){
-					continue;
-				}
-				robot.mouseMove(X, Y);
-				lastTime = curTime;
-			  }
-			  lastX = X;
-			  lastY = Y;
-		  }
-	  }catch (AWTException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	  }*/
     
   }
   
+  public void addXtoList(int X){
+	  if(XValues.size() == 100){
+		  XValues.remove(0);
+		  XValues.add(99, X);
+	  }
+	  else{
+		  XValues.add(X);
+	  }
+  }
+  
+  public void addYtoList(int Y){
+	  if(YValues.size() == 100){
+		  YValues.remove(0);
+		  YValues.add(99, Y);
+	  }
+	  else{
+		  YValues.add(Y);
+	  }
+  }
+  
+  public int[] findMedianXY(ArrayList<Integer> XValues, ArrayList<Integer> YValues){
+	  ArrayList<Integer> newXValues = new ArrayList<Integer>(XValues);
+	  ArrayList<Integer> newYValues = new ArrayList<Integer>(YValues);
+	  Collections.sort(newXValues);
+	  Collections.sort(newYValues);
+	  int X = newXValues.get(newXValues.size()/2);
+	  int Y = newYValues.get(newYValues.size()/2);
+	  return new int[]{X, Y};
+  }
   
   public static void main(String args[]) throws IllegalStateException, IOException
   {
@@ -946,7 +984,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
     catch(Exception e){e.printStackTrace();}
   }
   
-  public void countHighsAndLows(){
+  public int countHighsAndLows(){
 	  long valuesSum = 0l;
 	  int highs = 0;
 	  int lows = 0;
@@ -955,7 +993,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  boolean isIncreasing = false;
 	  boolean isDecreasing = false;
 	  
-	  if(XArray[0] < XArray[1]){
+	  if(XValues.get(0) < XValues.get(1)){
 		  isIncreasing = true;
 		  height += 2;
 	  }
@@ -966,11 +1004,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  
 	  for(int i=2; i < 100; i++){
 		  valuesSum += XArray[i];
-		  if(XArray[i] == 0){
+		  if(XValues.get(i) == 0){
 			  break;
 		  }
 		  if(isIncreasing){
-			  if(XArray[i-1] > XArray[i]){
+			  if(XValues.get(i-1) > XValues.get(i)){
 				  if(height >= 5){
 					  highs++;
 				  }
@@ -982,7 +1020,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
 			  height++;
 		  }
 		  else if(isDecreasing){
-			  if(XArray[i-1] <= XArray[i]){
+			  if(XValues.get(i-1) <= XValues.get(i)){
 				  if(depth >= 5){
 					  lows++;
 				  }
@@ -996,5 +1034,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  }
 	  System.out.println("Highs: "+highs+" Lows: "+lows);
 	  System.out.println("Sum of all values: "+valuesSum);
+	  if(highs >= 4 && lows >= 4){
+		  return -1;
+	  }
+	  else{
+		  return 0;
+	  }
   }
 }
