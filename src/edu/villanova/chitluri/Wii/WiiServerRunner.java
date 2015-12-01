@@ -1,15 +1,7 @@
 package edu.villanova.chitluri.Wii;
 
 import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
 import java.awt.Robot;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,31 +10,18 @@ import java.util.Observer;
 import java.util.PriorityQueue;
 
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import wiiremotej.AbsoluteAnalogStickMouse;
-import wiiremotej.AccelerometerMouse;
-import wiiremotej.AnalogStickData;
-import wiiremotej.AnalogStickMouse;
 import wiiremotej.ButtonMap;
 import wiiremotej.ButtonMouseMap;
-import wiiremotej.ButtonMouseWheelMap;
-import wiiremotej.IRAccelerometerMouse;
 import wiiremotej.IRLight;
-import wiiremotej.IRMouse;
-import wiiremotej.MotionAccelerometerMouse;
 import wiiremotej.PrebufferedSound;
-import wiiremotej.RelativeAnalogStickMouse;
-import wiiremotej.TiltAccelerometerMouse;
 import wiiremotej.WiiRemote;
 import wiiremotej.WiiRemoteExtension;
 import wiiremotej.WiiRemoteJ;
 import wiiremotej.event.WRAccelerationEvent;
 import wiiremotej.event.WRButtonEvent;
-import wiiremotej.event.WRClassicControllerExtensionEvent;
 import wiiremotej.event.WRExtensionEvent;
-import wiiremotej.event.WRGuitarExtensionEvent;
 import wiiremotej.event.WRIREvent;
 import wiiremotej.event.WRNunchukExtensionEvent;
 import wiiremotej.event.WRStatusEvent;
@@ -77,65 +56,14 @@ import com.intel.bluetooth.BlueCoveConfigProperties;
 public class WiiServerRunner extends WiiRemoteAdapter
 {
 
-//********************************************************
-// SETTINGS
-//********************************************************
-  
-  // Please see the Readme to see how to configure these settings.
-  
   private static boolean printMessage = false; //Print every time the Wiimote sends an update
-  
-  private static boolean sendToServerActivated  = true;   // Actually send the received data from the WiiMote over the server
-  private static boolean sendNunchuckAcclerationActivated = true; // Actually send the Nunchuck data from the WiiMote over the server if it is connected
-  
-  private static boolean paintSqrtXXYYZZ = true; // Currently this does nothing (See Readme)
-  private static boolean paintXYZ = true; // Currently this does nothing (See Readme)
-  
-  private static boolean specialFunctionsOn = true; // Michael Diamond implemented many cool features with WiiRemoteJ
-                             // that can be activated with combinational button presses.
-                             // These features are by default turned off because they are unnecessary
-                             // for WiiConductor.
-  
-//********************************************************
-// Added Static Variables
-//********************************************************
   public static IntermediaryObservervable observable; // Used to communicate to WiiServerThreads
-  private static String messageToBeObserved = ""; // Message observed by WiiServerThreads
   private static int count = 0;
-  private static int IRcounter = 0;
-  
-  private static int xxyyzz = 0;
-  private static int lastXXYYZZ = 0;
-//////////////////////////////////////////////////////////
-
-  private static boolean accelerometerSource = true; //true = wii remote, false = nunchuk
-  private static boolean lastSource = true;
-  
-  private static boolean mouseTestingOn;
-  private static int status = 0;
-  private static int accelerometerStatus = 0;
-  private static int analogStickStatus = 0;
-  private static JFrame mouseTestFrame;
-  private static JPanel mouseTestPanel;
-  
+    
   private WiiRemote remote;
-  private static JFrame graphFrame;
-  private static JPanel graph;
-  private static int[][] pixels;
-  private static int t = 0;
-  private static int x = 0;
-  private static int y = 0;
-  private static int z = 0;
-  private static int XArray[] = new int[120];
-  private static int YArray[] = new int[120];
   
   private static int lastX = 0;
   private static int lastY = 0;
-  private static int lastZ = 0;
-  
-  private static long lastTime = 0;
-  
-  private static PrebufferedSound prebuf;
   
   private static ArrayList<Integer> XValues = new ArrayList<Integer>();
   private static ArrayList<Integer> YValues = new ArrayList<Integer>();
@@ -317,14 +245,14 @@ public class WiiServerRunner extends WiiRemoteAdapter
 					}
 					else{
 						System.out.println("Don't Move");
-						int values[] = findMedianXY(XValues, YValues);
-						tempX = values[0];
-						tempY = values[1];
-						//tempX = minHeapX.peek();
-						//tempY = minHeapY.peek();
+						//int values[] = findMedianXY(XValues, YValues);
+						//tempX = values[0];
+						//tempY = values[1];
+						tempX = minHeapX.peek();
+						tempY = minHeapY.peek();
 					}
 					robot.mouseMove(tempX, tempY);
-					lastTime = curTime;
+					//lastTime = curTime;
 					lastX = tempX;
 					lastY = tempY;
 				}
@@ -348,14 +276,6 @@ public class WiiServerRunner extends WiiRemoteAdapter
 		  XValues.add(99, X);
 		  if(maxHeapX.size() == 0 && XValues.get(0) > 0){
 			  buildMaxMinHeapsX();
-			  /*for(int i=0; i < 50; i++){
-				  System.out.print("  "+minHeapX.poll());
-			  }
-			  System.out.println("------X------");
-			  for(int i=0; i < 50; i++){
-				  System.out.print("  "+maxHeapX.poll());
-			  }
-			  System.out.println();*/
 		  }
 	  }
 	  else{
@@ -369,14 +289,6 @@ public class WiiServerRunner extends WiiRemoteAdapter
 		  YValues.add(99, Y);
 		  if(maxHeapY.size() == 0 && YValues.get(0) > 0){
 			  buildMaxMinHeapsY();
-			  /*for(int i=0; i < 50; i++){
-				  System.out.print("  "+minHeapY.poll());
-			  }
-			  System.out.println("------Y------");
-			  for(int i=0; i < 50; i++){
-				  System.out.print("  "+maxHeapY.poll());
-			  }
-			  System.out.println();*/
 		  }
 	  }
 	  else{
@@ -558,7 +470,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  }
 	  
 	  for(int i=2; i < 100; i++){
-		  valuesSum += XArray[i];
+		  //valuesSum += XArray[i];
 		  if(XValues.get(i) == 0){
 			  break;
 		  }
