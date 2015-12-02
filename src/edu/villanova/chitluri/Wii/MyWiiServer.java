@@ -1,5 +1,6 @@
 package edu.villanova.chitluri.Wii;
 
+
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -54,7 +55,7 @@ import com.intel.bluetooth.BlueCoveConfigProperties;
  * 
  */
 
-public class WiiServerRunner extends WiiRemoteAdapter
+public class MyWiiServer extends WiiRemoteAdapter
 {
 
   private static boolean printMessage = true; //Print every time the Wiimote sends an update
@@ -85,7 +86,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
   /***************************
    * Constructor
    ***************************/
-  public WiiServerRunner(WiiRemote remote) throws IOException
+  public MyWiiServer(WiiRemote remote) throws IOException
   {
     this.remote = remote;
     
@@ -245,33 +246,15 @@ public class WiiServerRunner extends WiiRemoteAdapter
 			  if (light != null){
 				X = (int) Math.round((1.0D - light.getX()) * 1440);
 				Y = (int) Math.round(light.getY() * 900);
-				int tempX = X;
-				int tempY = Y;
-				if(!(Math.abs(lastX-X) < 5 && Math.abs(lastY - Y) < 5)){
-					if(countHighsAndLows() == 0){
-						System.out.println("Move");
-					}
-					else{
-						System.out.println("Don't Move");
-						//int values[] = findMedianXY(XValues, YValues);
-						//tempX = values[0];
-						//tempY = values[1];
-						tempX = minHeapX.peek();
-						tempY = minHeapY.peek();
-					}
-					robot.mouseMove(tempX, tempY);
-					//lastTime = curTime;
-					lastX = tempX;
-					lastY = tempY;
-				}
+				robot.mouseMove(X, Y);
 				
 			  }
 		  }
-		  addXtoHeap(X);
-		  addYtoHeap(Y);
 		  addXtoList(X);
 		  addYtoList(Y);
-	} catch (AWTException e) {
+		  System.out.println("Calling");
+		  countHighsAndLows();
+	} catch (Exception e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
@@ -279,12 +262,9 @@ public class WiiServerRunner extends WiiRemoteAdapter
   }
   
   public void addXtoList(int X){
-	  if(XValues.size() == 100){
+	  if(XValues.size() == 200){
 		  XValues.remove(0);
-		  XValues.add(99, X);
-		  if(maxHeapX.size() == 0 && XValues.get(0) > 0){
-			  buildMaxMinHeapsX();
-		  }
+		  XValues.add(199, X);
 	  }
 	  else{
 		  XValues.add(X);
@@ -292,127 +272,16 @@ public class WiiServerRunner extends WiiRemoteAdapter
   }
   
   public void addYtoList(int Y){
-	  if(YValues.size() == 100){
+	  if(YValues.size() == 200){
 		  YValues.remove(0);
-		  YValues.add(99, Y);
-		  if(maxHeapY.size() == 0 && YValues.get(0) > 0){
-			  buildMaxMinHeapsY();
-		  }
+		  YValues.add(199, Y);
 	  }
 	  else{
 		  YValues.add(Y);
 	  }
   }
   
-  public void addXtoHeap(int X){
-	  if(minHeapX.size() == 50 && maxHeapX.size() == 50){
-		  int elemToRemove = XValues.get(0);
-		  if(maxHeapX.contains(elemToRemove)){
-			  maxHeapX.remove(elemToRemove);
-		  }
-		  else if(minHeapX.contains(elemToRemove)){
-			  minHeapX.remove(elemToRemove);
-		  }
-		  else{
-			  System.out.println("Fatal Error: Cannot remove element from X Heap");
-		  }
-		  
-		  if(X < maxHeapX.peek()){
-			  if(maxHeapX.size() == 49){
-				  maxHeapX.add(X);
-			  }
-			  else if(minHeapX.size() == 49){
-				  minHeapX.add(maxHeapX.poll());
-				  maxHeapX.add(X);
-			  }
-		  }
-		  else{
-			  if(minHeapX.size() == 49){
-				  minHeapX.add(X);
-			  }
-			  else if(maxHeapX.size() == 49){
-				  maxHeapX.add(minHeapX.poll());
-				  minHeapX.add(X);
-			  }
-		  }
-	  }
-  }
   
-  public void addYtoHeap(int Y){
-	  if(minHeapY.size() == 50 && maxHeapY.size() == 50){
-		  int elemToRemove = YValues.get(0);
-		  if(maxHeapY.contains(elemToRemove)){
-			  maxHeapY.remove(elemToRemove);
-		  }
-		  else if(minHeapY.contains(elemToRemove)){
-			  minHeapY.remove(elemToRemove);
-		  }
-		  else{
-			  System.out.println("Fatal Error: Cannot remove element from Y Heap");
-		  }
-		  
-		  if(Y < maxHeapY.peek()){
-			  if(maxHeapY.size() == 49){
-				  maxHeapY.add(Y);
-			  }
-			  else if(minHeapY.size() == 49){
-				  minHeapY.add(maxHeapY.poll());
-				  maxHeapY.add(Y);
-			  }
-		  }
-		  else{
-			  if(minHeapY.size() == 49){
-				  minHeapY.add(Y);
-			  }
-			  else if(maxHeapY.size() == 49){
-				  maxHeapY.add(minHeapY.poll());
-				  minHeapY.add(Y);
-			  }
-		  }
-	  }
-  }
-  
-  public void buildMaxMinHeapsX(){
-	  for(int i=0; i<50; i++){
-		  maxHeapX.add(XValues.get(i));
-	  }
-	  for(int i=50; i<100; i++){
-		  if(XValues.get(i) < maxHeapX.peek()){
-			  int temp = maxHeapX.poll();
-			  maxHeapX.add(XValues.get(i));
-			  minHeapX.add(temp);
-		  }
-		  else{
-			  minHeapX.add(XValues.get(i));
-		  }
-	  }
-  }
-  
-  public void buildMaxMinHeapsY(){
-	  for(int i=0; i<50; i++){
-		  maxHeapY.add(YValues.get(i));
-	  }
-	  for(int i=50; i<100; i++){
-		  if(YValues.get(i) < maxHeapY.peek()){
-			  int temp = maxHeapY.poll();
-			  maxHeapY.add(YValues.get(i));
-			  minHeapY.add(temp);
-		  }
-		  else{
-			  minHeapY.add(YValues.get(i));
-		  }
-	  }
-  }
-  
-  public int[] findMedianXY(ArrayList<Integer> XValues, ArrayList<Integer> YValues){
-	  ArrayList<Integer> newXValues = new ArrayList<Integer>(XValues);
-	  ArrayList<Integer> newYValues = new ArrayList<Integer>(YValues);
-	  Collections.sort(newXValues);
-	  Collections.sort(newYValues);
-	  int X = newXValues.get(newXValues.size()/2);
-	  int Y = newYValues.get(newYValues.size()/2);
-	  return new int[]{X, Y};
-  }
   
   public static void main(String args[]) throws IllegalStateException, IOException
   {
@@ -445,7 +314,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
         }
       }
       
-      remote.addWiiRemoteListener(new WiiServerRunner(remote));
+      remote.addWiiRemoteListener(new MyWiiServer(remote));
       //remote.setSpeakerEnabled(true);
       remote.setIRSensorEnabled(true, WRIREvent.BASIC);
       remote.setLEDIlluminated(0, true);
@@ -464,7 +333,6 @@ public class WiiServerRunner extends WiiRemoteAdapter
   }
   
   public int countHighsAndLows(){
-	  long valuesSum = 0l;
 	  int highs = 0;
 	  int lows = 0;
 	  int height = 0;
@@ -488,7 +356,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
 		  maxDisplacementY = YValues.get(0);
 	  }
 	  
-	  for(int i=2; i < 100; i++){
+	  for(int i=2; i < 200; i++){
 		  //valuesSum += XArray[i];
 		  if(XValues.get(i) == 0){
 			  break;
@@ -529,39 +397,35 @@ public class WiiServerRunner extends WiiRemoteAdapter
 			  depth++;
 		  }
 	  }
+	  //System.out.println(XValues);
 	  //System.out.println("Highs: "+highs+" Lows: "+lows);
 	  //System.out.println("Sum of all values: "+valuesSum);
 	  
 	  
-	  if(highs >= 4 && lows >= 4){
-		  if (true) {
-			if (highs >= 6 && lows >= 6) {
-				Collections.sort(displacementX);
-				Collections.sort(displacementY);
-				System.out.println(displacementX);
-				System.out.println(displacementY);
-				problemWidth = Math.abs(displacementX.get(displacementX.size() / 2));
-				problemHeight = Math.abs(displacementY.get(displacementY.size() / 2));
-				isMeasurementDone = true;
-				
-				
-				JFrame graphFrame = new JFrame();
-		        graphFrame.setTitle("Accelerometer graph: Wii Remote");
-		        graphFrame.setSize(800, 600);
-		        graphFrame.setResizable(false);
-		        
-		        graph = new JPanel()
-		        {
-		          public void paintComponent(Graphics graphics)
-		          {
-		        	 //graphics.clearRect(240, 240, 500, 500);
-		        	 graphics.setColor(Color.red);
-		     		 graphics.fillOval(240, 240, problemWidth, problemHeight);
-		          }
-		        };
-		        graphFrame.add(graph);
-		        graphFrame.setVisible(true);
-			}
+	  if(highs >= 13 && lows >= 13){
+		if (!isMeasurementDone) {
+			Collections.sort(displacementX);
+			Collections.sort(displacementY);
+			System.out.println(displacementX);
+			System.out.println(displacementY);
+			problemWidth = Math
+					.abs(displacementX.get(displacementX.size() / 2));
+			problemHeight = Math
+					.abs(displacementY.get(displacementY.size() / 2));
+			isMeasurementDone = true;
+			JFrame graphFrame = new JFrame();
+			graphFrame.setTitle("Accelerometer graph: Wii Remote");
+			graphFrame.setSize(600, 600);
+			graphFrame.setResizable(false);
+			graph = new JPanel() {
+				public void paintComponent(Graphics graphics) {
+					//graphics.clearRect(240, 240, 500, 500);
+					graphics.setColor(Color.red);
+					graphics.fillOval(240, 240, problemWidth, problemHeight);
+				}
+			};
+			graphFrame.add(graph);
+			graphFrame.setVisible(true);
 		}
 		return -1;
 	  }
