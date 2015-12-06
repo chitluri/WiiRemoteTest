@@ -31,31 +31,7 @@ import wiiremotej.event.WiiRemoteAdapter;
 
 import com.intel.bluetooth.BlueCoveConfigProperties;
 
-//********************************************************
-//NOTE
-//********************************************************
-
-// Also, please note that all code surrounded by these types of comments 
-// are modification's to Michael Diamond's original 1/05/07 WRLImpl.java code
-// which I found at:
-// http://www.world-of-cha0s.hostrocket.com/WiiRemoteJ/WiiRemoteJ%20v1.6.zip.gz
-// an original copy is included in the  source code.
-
-//////////////////////////////////////////////////////////
-
-/**
- * Implements WiiRemoteListener and acts as a general test class. Note that you can ignore the main method pretty much, as it mostly has to do with the graphs and GUIs.
- * At the very end though, there's an example of how to connect to a remote and how to prebuffer audio files.
- * 
- * @ModifyingAuthor by Jonathan Leung
- * @Version 6/1/10
- * 
- * @OriginalAuthor Michael Diamond
- * @OriginalVersion Version 1/05/07
- * 
- */
-
-public class MyWiiServer extends WiiRemoteAdapter
+public class MyWiiServerMeasure extends WiiRemoteAdapter
 {
 
   private static boolean printMessage = true; //Print every time the Wiimote sends an update
@@ -70,10 +46,6 @@ public class MyWiiServer extends WiiRemoteAdapter
   
   private static ArrayList<Integer> XValues = new ArrayList<Integer>();
   private static ArrayList<Integer> YValues = new ArrayList<Integer>();
-  private static PriorityQueue<Integer> minHeapX = new PriorityQueue<Integer>(50);
-  private static PriorityQueue<Integer> maxHeapX = new PriorityQueue<Integer>(50, Collections.reverseOrder());
-  private static PriorityQueue<Integer> minHeapY = new PriorityQueue<Integer>(50);
-  private static PriorityQueue<Integer> maxHeapY = new PriorityQueue<Integer>(50, Collections.reverseOrder());
   
   private static ArrayList<Integer> displacementX = new ArrayList<Integer>();
   private static ArrayList<Integer> displacementY = new ArrayList<Integer>();
@@ -86,7 +58,7 @@ public class MyWiiServer extends WiiRemoteAdapter
   /***************************
    * Constructor
    ***************************/
-  public MyWiiServer(WiiRemote remote) throws IOException
+  public MyWiiServerMeasure(WiiRemote remote) throws IOException
   {
     this.remote = remote;
     
@@ -252,7 +224,7 @@ public class MyWiiServer extends WiiRemoteAdapter
 		  }
 		  addXtoList(X);
 		  addYtoList(Y);
-		  System.out.println("Calling");
+		  //System.out.println("Calling");
 		  countHighsAndLows();
 	} catch (Exception e) {
 		// TODO Auto-generated catch block
@@ -294,13 +266,7 @@ public class MyWiiServer extends WiiRemoteAdapter
     
     try
     {
-      
-    	
-        //graph.repaint();
-    	
-      //********************************************************
-      // Find and connect to a Wii Remote
-      //********************************************************        
+      // Find Wii remote and connect
       WiiRemote remote = null;
       
       while (remote == null) {
@@ -314,7 +280,7 @@ public class MyWiiServer extends WiiRemoteAdapter
         }
       }
       
-      remote.addWiiRemoteListener(new MyWiiServer(remote));
+      remote.addWiiRemoteListener(new MyWiiServerMeasure(remote));
       //remote.setSpeakerEnabled(true);
       remote.setIRSensorEnabled(true, WRIREvent.BASIC);
       remote.setLEDIlluminated(0, true);
@@ -397,10 +363,6 @@ public class MyWiiServer extends WiiRemoteAdapter
 			  depth++;
 		  }
 	  }
-	  //System.out.println(XValues);
-	  //System.out.println("Highs: "+highs+" Lows: "+lows);
-	  //System.out.println("Sum of all values: "+valuesSum);
-	  
 	  
 	  if(highs >= 13 && lows >= 13){
 		if (!isMeasurementDone) {
@@ -419,7 +381,6 @@ public class MyWiiServer extends WiiRemoteAdapter
 			graphFrame.setResizable(false);
 			graph = new JPanel() {
 				public void paintComponent(Graphics graphics) {
-					//graphics.clearRect(240, 240, 500, 500);
 					graphics.setColor(Color.red);
 					graphics.fillOval(240, 240, problemWidth, problemHeight);
 				}

@@ -1,8 +1,6 @@
 package edu.villanova.chitluri.Wii;
 
 import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Robot;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,7 +9,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.PriorityQueue;
 
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import wiiremotej.ButtonMap;
@@ -30,31 +27,8 @@ import wiiremotej.event.WiiRemoteAdapter;
 
 import com.intel.bluetooth.BlueCoveConfigProperties;
 
-//********************************************************
-//NOTE
-//********************************************************
 
-// Also, please note that all code surrounded by these types of comments 
-// are modification's to Michael Diamond's original 1/05/07 WRLImpl.java code
-// which I found at:
-// http://www.world-of-cha0s.hostrocket.com/WiiRemoteJ/WiiRemoteJ%20v1.6.zip.gz
-// an original copy is included in the  source code.
-
-//////////////////////////////////////////////////////////
-
-/**
- * Implements WiiRemoteListener and acts as a general test class. Note that you can ignore the main method pretty much, as it mostly has to do with the graphs and GUIs.
- * At the very end though, there's an example of how to connect to a remote and how to prebuffer audio files.
- * 
- * @ModifyingAuthor by Jonathan Leung
- * @Version 6/1/10
- * 
- * @OriginalAuthor Michael Diamond
- * @OriginalVersion Version 1/05/07
- * 
- */
-
-public class WiiServerRunner extends WiiRemoteAdapter
+public class WiiMouseRunner extends WiiRemoteAdapter
 {
 
   private static boolean printMessage = true; //Print every time the Wiimote sends an update
@@ -74,18 +48,12 @@ public class WiiServerRunner extends WiiRemoteAdapter
   private static PriorityQueue<Integer> minHeapY = new PriorityQueue<Integer>(50);
   private static PriorityQueue<Integer> maxHeapY = new PriorityQueue<Integer>(50, Collections.reverseOrder());
   
-  private static ArrayList<Integer> displacementX = new ArrayList<Integer>();
-  private static ArrayList<Integer> displacementY = new ArrayList<Integer>();
-  
-  private static int problemWidth;
-  private static int problemHeight;
-  private static boolean isMeasurementDone = false;
   
   
   /***************************
    * Constructor
    ***************************/
-  public WiiServerRunner(WiiRemote remote) throws IOException
+  public WiiMouseRunner(WiiRemote remote) throws IOException
   {
     this.remote = remote;
     
@@ -224,7 +192,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
   
   public void disconnected()
   {
-    System.out.println("Remote disconnected... Please Wii again.");
+    System.out.println("Disconnected the remote... Please re-connect");
     System.exit(0);
   }
   
@@ -249,10 +217,10 @@ public class WiiServerRunner extends WiiRemoteAdapter
 				int tempY = Y;
 				if(!(Math.abs(lastX-X) < 5 && Math.abs(lastY - Y) < 5)){
 					if(countHighsAndLows() == 0){
-						System.out.println("Move");
+						//System.out.println("Move");
 					}
 					else{
-						System.out.println("Don't Move");
+						//System.out.println("Don't Move");
 						//int values[] = findMedianXY(XValues, YValues);
 						//tempX = values[0];
 						//tempY = values[1];
@@ -425,13 +393,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
     
     try
     {
-      
-    	
-        //graph.repaint();
-    	
-      //********************************************************
-      // Find and connect to a Wii Remote
-      //********************************************************        
+      // Find a remote and make a connection       
       WiiRemote remote = null;
       
       while (remote == null) {
@@ -445,7 +407,7 @@ public class WiiServerRunner extends WiiRemoteAdapter
         }
       }
       
-      remote.addWiiRemoteListener(new WiiServerRunner(remote));
+      remote.addWiiRemoteListener(new WiiMouseRunner(remote));
       //remote.setSpeakerEnabled(true);
       remote.setIRSensorEnabled(true, WRIREvent.BASIC);
       remote.setLEDIlluminated(0, true);
@@ -464,28 +426,20 @@ public class WiiServerRunner extends WiiRemoteAdapter
   }
   
   public int countHighsAndLows(){
-	  long valuesSum = 0l;
 	  int highs = 0;
 	  int lows = 0;
 	  int height = 0;
 	  int depth = 0;
 	  boolean isIncreasing = false;
 	  boolean isDecreasing = false;
-	  int minDisplacementX = -1;
-	  int maxDisplacementX = -1;
-	  int minDisplacementY = -1;
-	  int maxDisplacementY = -1;
 	  
 	  if(XValues.get(0) < XValues.get(1)){
 		  isIncreasing = true;
 		  height += 2;
-		  minDisplacementX = XValues.get(0);
 	  }
 	  else{
 		  isDecreasing = true;
 		  depth += 2;
-		  maxDisplacementX = XValues.get(0);
-		  maxDisplacementY = YValues.get(0);
 	  }
 	  
 	  for(int i=2; i < 100; i++){
@@ -497,16 +451,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
 			  if(XValues.get(i-1) > XValues.get(i)){
 				  if(height >= 5){
 					  highs++;
-					  maxDisplacementX = XValues.get(i-1);
-					  displacementX.add(maxDisplacementX - minDisplacementX);
-					  displacementY.add(maxDisplacementY - minDisplacementY);
 				  }
 				  height = 0;
 				  isIncreasing = false;
 				  isDecreasing = true;
 				  depth = 2;
-				  maxDisplacementX = XValues.get(i);
-				  maxDisplacementY = YValues.get(i);
 			  }
 			  height++;
 		  }
@@ -514,17 +463,11 @@ public class WiiServerRunner extends WiiRemoteAdapter
 			  if(XValues.get(i-1) <= XValues.get(i)){
 				  if(depth >= 5){
 					  lows++;
-					  minDisplacementX = XValues.get(i-1);
-					  minDisplacementY = YValues.get(i-1);
-					  displacementX.add(maxDisplacementX - minDisplacementX);
-					  displacementY.add(maxDisplacementY - minDisplacementY);
 				  }
 				  depth = 0;
 				  isIncreasing = true;
 				  isDecreasing = false;
 				  height = 2;
-				  minDisplacementX = XValues.get(i);
-				  minDisplacementY = YValues.get(i);
 			  }
 			  depth++;
 		  }
@@ -534,40 +477,9 @@ public class WiiServerRunner extends WiiRemoteAdapter
 	  
 	  
 	  if(highs >= 4 && lows >= 4){
-		  if (true) {
-			if (highs >= 6 && lows >= 6) {
-				Collections.sort(displacementX);
-				Collections.sort(displacementY);
-				System.out.println(displacementX);
-				System.out.println(displacementY);
-				problemWidth = Math.abs(displacementX.get(displacementX.size() / 2));
-				problemHeight = Math.abs(displacementY.get(displacementY.size() / 2));
-				isMeasurementDone = true;
-				
-				
-				JFrame graphFrame = new JFrame();
-		        graphFrame.setTitle("Accelerometer graph: Wii Remote");
-		        graphFrame.setSize(800, 600);
-		        graphFrame.setResizable(false);
-		        
-		        graph = new JPanel()
-		        {
-		          public void paintComponent(Graphics graphics)
-		          {
-		        	 //graphics.clearRect(240, 240, 500, 500);
-		        	 graphics.setColor(Color.red);
-		     		 graphics.fillOval(240, 240, problemWidth, problemHeight);
-		          }
-		        };
-		        graphFrame.add(graph);
-		        graphFrame.setVisible(true);
-			}
-		}
 		return -1;
 	  }
 	  else{
-		  displacementX.clear();
-		  displacementY.clear();
 		  return 0;
 	  }
 	  

@@ -57,7 +57,7 @@ public class WiiServer implements Runnable{
         thread = new WiiServerThread(serverSocket.accept());
         
         //Make the instance of WiiServerThread an observer of WiiServerRunner.java
-        WiiServerRunner.newObserver(thread);
+        WiiMouseRunner.newObserver(thread);
         
         // Start the new thread
         thread.start();
